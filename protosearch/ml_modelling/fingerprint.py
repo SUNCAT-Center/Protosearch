@@ -35,7 +35,6 @@ class FingerPrint:
         that must be taken into account
         * Incorporate feature engineering
         * TEMP
-
     """
 
     #| - FingerPrint **********************************************************
@@ -301,6 +300,8 @@ class FingerPrint:
 
 
     def join_input_to_fingerprints(self):
+        """Concancotate
+        """
         #| - join_input_to_fingerprints
         input_data = self.input_data
         fingerprints = self.fingerprints
@@ -313,15 +314,21 @@ class FingerPrint:
 
         # TODO
         #| - Check that operation was succesful
-        print(len(input_data))
-        print(len(fingerprints))
+        # Merge command shouldn't be dropping any rows
 
-        print(len(df_out))
+        # print(len(input_data))
+        # print(len(fingerprints))
+        # print(len(df_out))
+
+        if len(input_data) != len(fingerprints): print("MISTAKE iasdjfisj")
+        if len(input_data) != len(df_out): print("MISTAKE iasdjfisj2")
+        if len(fingerprints) != len(df_out): print("MISTAKE iasdjfisj3")
         #__|
 
-        # return(input_data, fingerprints)
+        self.fingerprints = df_out
 
-        return(df_out)
+        # return(input_data, fingerprints)
+        # return(df_out)
         #__|
 
     #__| **********************************************************************
