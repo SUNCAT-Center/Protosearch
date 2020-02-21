@@ -157,7 +157,8 @@ class AtomsEnumeration():
         for key, value in self.elements.items():
             self.elements[key] = map_elements(value)
 
-    def store_atom_enumeration(self, filename=None, multithread=False):
+    def store_atom_enumeration(self, filename=None, multithread=False,
+                               max_candidates=1):
         self.filename = filename
         DB = PrototypeSQL(filename=filename)
         DB._connect()
@@ -191,7 +192,7 @@ class AtomsEnumeration():
             for prototype in prototypes:
                 self.store_atoms_for_prototype(prototype)
 
-    def store_atoms_for_prototype(self, prototype, max_candidates=3):
+    def store_atoms_for_prototype(self, prototype, max_candidates=1):
 
         p_name = prototype['name']
         counts = []
@@ -234,6 +235,7 @@ class AtomsEnumeration():
                                json.dumps(prototype['wyckoffs']),
                                'species': json.dumps(species),
                                'structure_name': structure_name,
+                               'source': 'prototype',
                                'relaxed': 0,
                                'completed': 0,
                                'submitted': 0}
