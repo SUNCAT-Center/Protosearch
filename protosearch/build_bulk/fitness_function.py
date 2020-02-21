@@ -312,17 +312,14 @@ def get_covalent_density(atoms):
 
 def get_apf_fitness(atoms, apf_0=0.1):
     """ Volume dependent fitness function, expressed in terms of the 
-    atomic packing factor V_atoms/V_cell assuming a parabolic dependency
-    F ~ 1/V**2
+    atomic packing factor V_atoms/V_cell assuming a fermi function dependence
 
     Parameters:
-    apf_0:  APF value where fitness=0
+    apf_0:  APF value where fitness=0.5
     """
 
     apf = get_covalent_density(atoms)
-    a0 = apf_0**2/(1 - apf_0**2)
-
-    fitness = 1 + a0 * (1 - 1 / apf**2)
+    fitness = 1 / (np.exp(-(apf - apf_0)/0.05) + 1)
 
     return fitness
 
@@ -336,6 +333,7 @@ def get_fitness(atoms):
         fitness = - atoms.get_volume()
     else:
         fitness = - get_ewald_energy(atoms)
+        fitness *= get_apf_fitness(atoms)
 
     return fitness
 
