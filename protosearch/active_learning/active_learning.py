@@ -77,6 +77,7 @@ class ActiveLearningLoop:
 
         self.Workflow.write_status(
             chemical_formulas=chemical_formulas, batch_size=batch_size)
+        self.status = self.Workflow.get_status()
 
     def _initialize(self):
         if not self.status['enumerated']:
@@ -129,7 +130,7 @@ class ActiveLearningLoop:
             WF.check_submissions(**kwargs)
         t0 = time.time()
         min_running_jobs = batch_size
-        while len(running_ids) > min_running_jobs:
+        while len(running_ids) >= min_running_jobs:
             WF.recollect()
             temp_completed_ids, temp_failed_ids, running_ids =\
                 WF.check_submissions(**kwargs)
@@ -304,10 +305,11 @@ class ActiveLearningLoop:
 
             AE = AtomsEnumeration(self.elements,
                                   self.max_atoms,
-                                  self.spacegroups)
+                                  spacegroups)
             print('Enumerating atoms')
             AE.store_atom_enumeration(filename=self.db_filename,
-                                      multithread=False)
+                                      multithread=False,
+                                      max_candidates=1)
 
     def enumerate_prototypes(self, stoichiometry, spacegroups=None,
                              num_type='wyckoff'):
