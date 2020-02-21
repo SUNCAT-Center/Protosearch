@@ -90,11 +90,12 @@ class OqmdInterface:
 
                 structure_name = d['structure_name']
 
+                if DB.ase_db.count(structure_name=structure_name) > 0:
+                    continue
+
                 # Save prototype
                 DB.write_prototype(entry=entry)
 
-                if DB.ase_db.count(structure_name=structure_name) > 0:
-                    continue
 
                 key_value_pairs = \
                     {'p_name': d['p_name'],
@@ -103,6 +104,7 @@ class OqmdInterface:
                      'wyckoffs': json.dumps(d['wyckoffs']),
                      'species': json.dumps(d['species']),
                      'structure_name': structure_name,
+                     'source': 'icsd',
                      'relaxed': 0,
                      'completed': 0,
                      'submitted': 0}
@@ -186,7 +188,6 @@ class OqmdInterface:
                 # Set new lattice constants
                 CP = CellParameters(spacegroup=spacegroup)
                 atoms = CP.optimize_lattice_constants(atoms)
-
                 # Get primitive atoms
                 atoms = SPG.get_primitive_atoms(atoms)
 
@@ -208,7 +209,6 @@ class OqmdInterface:
         indices = [i for i in range(len(atoms_data))
                    if not np.any(graphs[i] in graphs[:i])]
 
-        graphs = [graphs[i] for i in indices]
         atoms_data = [atoms_data[i] for i in indices]
 
         return atoms_data
