@@ -12,33 +12,51 @@ class MetaAnalysis(ActiveLearningLoop):
     def __init__(self,
                  *args, **kwargs,
                  ):
-        self.energies = None
+        #self.energies = None
 
         super().__init__(*args, **kwargs)
 
     def plot_fingerprint_variation(self):
-        test_ids = self.DB.get_initial_structure_ids()
-        all_fingerprints = self.DB.load_dataframe('fingerprint', ids=test_ids)
-        all_fingerprints = {'train': all_fingerprints.values, 'test': None}
-        all_fingerprints, bad_ids = clean_features(all_fingerprints,
-                                                   scale=True)
-        all_fingerprints = all_fingerprints['train']
-        max_values = np.max(all_fingerprints, axis=0)
-        indices = np.argsort(max_values)
-        p.plot(all_fingerprints[:, indices].T)
+        self.train_ids = self.Workflow.get_completed_structure_ids()
+        self.test_ids = \
+            self.Workflow.get_uncompleted_structure_ids(unsubmitted_only=False)
+        #test_ids = self.Workflow.get_initial_structure_ids()
+        #all_fingerprints = self.Workflow.load_dataframe('fingerprint', ids=test_ids)
+        #all_fingerprints = {'train': all_fingerprints.values, 'test': None}
+        #all_fingerprints, bad_ids = clean_features(all_fingerprints,
+        #                                           scale=True)
+        #all_fingerprints = all_fingerprints['train']
+        #max_values = np.max(all_fingerprints, axis=0)
+        #indices = np.argsort(max_values)        
+        features = self.get_features(scale=True)
 
-        p.xlabel('Feature id')
-        p.ylabel('Standardized feature value')
-        p.title('Fingerprints for {} structures'.format(len(all_fingerprints)))
+        for i, kind in enumerate(['test', 'train']):
+            p.subplot(2,1,1 + i)
+            p.plot(features[kind].T)
+
+            p.xlabel('Feature id')
+            p.ylabel('Standardized feature value')
+            p.title(kind)
         p.show()
 
-    def plot_prediction(self, energies, uncertainties, calculated_indices=[]):
+    def plot_fingerprint_change(self):
+        self.train_ids = self.Workflow.get_completed_structure_ids()
+
+        initial_ids = []
+        for i in self.train_ids:
+            initial_ids += [self.Workflow.ase_db.get(id=i).initial_id]
+
+        print(initial_ids)
+
+
+    def _plot_prediction(self, energies, uncertainties, calculated_indices=[]):
         p.figure()
 
         x = np.arange(len(energies))
         p.plot(x, energies, 'x', label='energies')
-        p.plot(x, energies - uncertainties, 'k--', label='std deviation')
-        p.plot(x, energies + uncertainties, 'k--')
+        p.plot(x, energies - uncertainties, color='gray', linestyle='--',
+               label='std deviation')
+        p.plot(x, energies + uncertainties, color='gray', linestyle='--')
 
         new_calculated_indices = \
             [i for i in np.where(uncertainties == 0)[0]
@@ -46,6 +64,7 @@ class MetaAnalysis(ActiveLearningLoop):
 
         p.plot(x[calculated_indices], energies[calculated_indices],
                'yo', label='calculated')
+
         if len(new_calculated_indices) > 0:
             p.plot(x[new_calculated_indices],
                    energies[new_calculated_indices], 'ro',
@@ -57,42 +76,60 @@ class MetaAnalysis(ActiveLearningLoop):
 
         return p
 
-    def collect_results(self):
+    def _collect_results(self):
         energies = np.append(self.energies, self.targets)
         uncertainties = np.append(self.uncertainties,
                                   np.zeros_like(self.targets))
+        ids = np.append(self.test_ids, self.train_ids)
 
         indices = np.argsort(energies)
         energies = energies[indices]
         uncertainties = uncertainties[indices]
+        ids = ids[indices]
 
-        calculated_ids = np.where(uncertainties == 0)[0]
+        calculated_indices = np.where(uncertainties == 0)[0]
 
-        return energies, uncertainties, calculated_ids
+        return ids, energies, uncertainties, calculated_indices
 
-    def get_new_prediction(self):
-        self.train_ids = self.DB.get_completed_structure_ids()
+    def get_new_prediction(self, highlight_id=None):
+        self.train_ids = self.Workflow.get_completed_structure_ids()
         self.test_ids = \
-            self.DB.get_uncompleted_structure_ids(unsubmitted_only=False)
+            self.Workflow.get_uncompleted_structure_ids(unsubmitted_only=False)
         self.get_ml_prediction()
 
-        energies, uncertainties, calculated_ids = self.collect_results()
+        ids, energies, uncertainties, calculated_indices = self._collect_results()
 
-        p = self.plot_prediction(energies,
-                                 uncertainties,
-                                 calculated_ids)
+        p = self._plot_prediction(energies,
+                                  uncertainties,
+                                  calculated_indices)
+
+        #images = []
+        for i in range(10):
+            p.annotate(str(ids[i]), (i, energies[i]))
+            #images += [self.Workflow.ase_db.get(id=int(ids[i])).toatoms()]
+            
+            
+        #for i in calculated_indices:
+        #    p.annotate(str(ids[i]), (i, energies[i]))
+
+        if highlight_id:
+            i_test = np.where(ids==highlight_id)[0][0]
+            p.annotate(str(ids[i_test]), (i_test, energies[i_test]), color='r')
+        
 
         p.title('Energy predictions')
 
         p.show()
+        #from ase.visualize import view
+        #view(images)
 
     def plot_acquisition(self, kappa=0.5, method='LCB'):
         #self.train_ids = self.train_ids[:100]
         # if self.energies is None:
 
-        self.train_ids = self.DB.get_completed_structure_ids()[:30]
+        self.train_ids = self.Workflow.get_completed_structure_ids()[:30]
         # get_completed_structure_ids(completed=0)
-        self.test_ids = self.DB.get_structure_ids()
+        self.test_ids = self.Workflow.get_structure_ids()
 
         self.test_ids = [i for i in self.test_ids if i not in self.train_ids]
         self.get_ml_prediction()
@@ -124,13 +161,13 @@ class MetaAnalysis(ActiveLearningLoop):
         p.show()
 
     def plot_predictions(self):
-        #predictions = self.DB.get_predictions()
+        #predictions = self.Workflow.get_predictions()
         predictions = []
         calculated = []
         if self.energies is None:
             self.get_new_prediction()
 
-        energies, uncertainties, calculated_ids = self.collect_results()
+        energies, uncertainties, calculated_ids = self._collect_results()
         prediction = {'energies': energies,
                       'vars': uncertainties,
                       'batch_no': predictions[-1]['batch_no'] + 1}
@@ -193,7 +230,7 @@ class MetaAnalysis(ActiveLearningLoop):
 
             for new_id in new_ids:
                 j = ids.index(new_id)
-                old_id = self.DB.ase_db.get(id=new_id).initial_id
+                old_id = self.Workflow.ase_db.get(id=new_id).initial_id
                 if len(ids_old) > 0:
                     index_old = ids_old.index(old_id)
                     p.plot([j], [energies_old[index_old]], 'rx')
@@ -246,7 +283,7 @@ class MetaAnalysis(ActiveLearningLoop):
 
     def test_model(self, method='UCB', kappa=None, plot=True):
 
-        lowest_energy = list(self.DB.ase_db.select(relaxed=1, sort='Ef'))[0].Ef
+        lowest_energy = list(self.Workflow.ase_db.select(relaxed=1, sort='Ef'))[0].Ef
         calculated = []
         i = 0
 
@@ -287,10 +324,10 @@ class MetaAnalysis(ActiveLearningLoop):
     def test_prototype_change(self):
         count_all = 0
         count_changed = 0
-        for row in self.DB.ase_db.select(relaxed=1):
+        for row in self.Workflow.ase_db.select(relaxed=1):
             count_all += 1
             p_name = row.p_name
-            row_i = self.DB.ase_db.get(id=row.initial_id)
+            row_i = self.Workflow.ase_db.get(id=row.initial_id)
             p_name_i = row_i.p_name
             if not p_name == p_name_i:
                 count_changed += 1
@@ -300,11 +337,11 @@ class MetaAnalysis(ActiveLearningLoop):
               .format(count_changed, count_all))
 
     def plot_performance(self, verbose=False):
-        train_ids = self.DB.get_completed_structure_ids()
+        train_ids = self.Workflow.get_completed_structure_ids()
         p_names = []
         energies = []
         for i in train_ids:
-            entry = self.DB.ase_db.get(i)
+            entry = self.Workflow.ase_db.get(i)
             p_names += [entry.p_name]
             energies += [entry.energy]
 
@@ -333,17 +370,18 @@ class MetaAnalysis(ActiveLearningLoop):
         for j in range(len(train_ids)):
             self.test_ids = [train_ids[j]]
             self.train_ids = np.delete(train_ids, j)
-            initial_id = self.DB.ase_db.get(
+            initial_id = self.Workflow.ase_db.get(
                 id=int(self.test_ids[0])).initial_id
             self.test_ids += [initial_id]
             self.test_ids = sorted(self.test_ids)
             print(self.test_ids)
-            row = self.DB.ase_db.get(id=int(self.test_ids[-1]))
-            row_initial = self.DB.ase_db.get(id=initial_id)
+            row = self.Workflow.ase_db.get(id=int(self.test_ids[-1]))
+            row_initial = self.Workflow.ase_db.get(id=initial_id)
             energy = row.Ef
 
-            self.train_ml()
+            self.get_ml_prediction()
 
+            print(self.energies)
             errors += [abs(self.energies[1] - energy)]
             se += [(self.energies[1] - energy)**2]
             errors_nonrelaxed += [abs(self.energies[0] - energy)]
@@ -358,6 +396,7 @@ class MetaAnalysis(ActiveLearningLoop):
                    color='gray', zorder=0)
             p.plot([energy], [self.energies[0]], 'ro')
             p.plot([energy], [self.energies[-1]], 'bo')
+            p.show()
 
             if verbose:
                 print('--------------------------')

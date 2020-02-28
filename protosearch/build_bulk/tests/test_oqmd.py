@@ -14,6 +14,11 @@ class OqmdTest(unittest.TestCase):
         assert(len(p) == 19)
         print('{} distinct prototypes found'.format(len(p)))
 
+    def test_unique_prototypes2(self):
+        O = OqmdInterface()
+        p = O.get_distinct_prototypes(chemical_formula='TiO2')
+        print(len(p))
+
     def test_create_proto_dataset(self):
         O = OqmdInterface()
         atoms_list = O.create_proto_data_set(chemical_formula='FeO6',
@@ -31,24 +36,21 @@ class OqmdTest(unittest.TestCase):
         O = OqmdInterface()
 
         atoms_data = O.get_atoms_for_prototype(chemical_formula='TiO2',
-                                               proto_name='AB2_2_a_f_136',
-                                               max_candidates=1)[0]
+                                               proto_name='AB2_2_a_f_136')[0]
         assert atoms_data['chemical_formula'] == atoms_data['original_formula']
 
     def test_unique(self):
         # AB == BA  - one structure
         O = OqmdInterface()
         atoms_data = O.get_atoms_for_prototype(chemical_formula='TiMo',
-                                               proto_name='AB_4_ab_ab_186',
-                                               max_candidates=1)
+                                               proto_name='AB_4_ab_ab_186')
         atoms = [a['atoms'] for a in atoms_data]
 
         assert len(atoms) == 1
 
         # ABC3 != BAC3  - two structures
         atoms_data = O.get_atoms_for_prototype(chemical_formula='TiMoO3',
-                                               proto_name='ABC3_1_a_a_b_160',
-                                               max_candidates=1)
+                                               proto_name='ABC3_1_a_a_b_160')
         atoms = [a['atoms'] for a in atoms_data]
 
         assert len(atoms) == 2
@@ -57,8 +59,7 @@ class OqmdTest(unittest.TestCase):
         O = OqmdInterface()
 
         atoms_data = O.get_atoms_for_prototype(chemical_formula='TiMoO2',
-                                               proto_name='ABC2_2_a_c_f_194',
-                                               max_candidates=1)[0]
+                                               proto_name='ABC2_2_a_c_f_194')[0]
         atoms = atoms_data['atoms']
 
         atoms_list = O.substitute_atoms(

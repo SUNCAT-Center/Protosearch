@@ -10,9 +10,9 @@ from protosearch.build_bulk.enumeration import (
     Enumeration, AtomsEnumeration, get_stoich_from_formulas, get_formulas)
 from protosearch.workflow.prototype_db import PrototypeSQL
 from protosearch.workflow.workflow import Workflow as WORKFLOW
+from protosearch.workflow.MAPI_wrapper import get_reference_energy
 from protosearch.ml_modelling.fingerprint import clean_features
 from protosearch.ml_modelling.regression_model import get_regression_model
-from protosearch.utils.standards import CrystalStandards
 from protosearch.build_bulk.oqmd_interface import OqmdInterface
 
 
@@ -89,18 +89,7 @@ class ActiveLearningLoop:
 
         self.batch_no = (self.status.get('last_batch_no', None) or 0) + 1
 
-        elements = []
-        for element_list in self.elements.values():
-            elements += element_list
-        elements = list(set(elements))
-
         self.Workflow.write_status(last_batch_no=self.batch_no)
-
-        failed_ids = self.monitor_submissions(batch_size=0,
-                                              standard_state=1)
-        if len(failed_ids) > 0:
-            raise RuntimeError(
-                'Standard state calculation failed for one or more species')
 
         self.Workflow.write_status(initialized=1)
 
@@ -401,17 +390,8 @@ class ActiveLearningLoop:
                 row.toatoms().symbols, return_counts=True)
             ref_energies = []
             for i, e in enumerate(elements):
-                ref_row = list(self.Workflow.ase_db.select(e,
-                                                           relaxed=1,
-                                                           standard_state=1,
-                                                           limit=1))
-                if len(ref_row) == 0:
-                    print('Standard state for {} not found'.format(row.formula))
-                    if e == 'O':
-                        ref_energies += [counts[i] * 4.66]
-                else:
-                    energy_atom = ref_row[0].energy / ref_row[0].natoms
-                    ref_energies += [counts[i] * energy_atom]
+                energy_atom = get_reference_energy(e)
+                ref_energies += [counts[i] * energy_atom]
 
             formation_energy = (energy - sum(ref_energies)) / row.natoms
             ase_db.update(id=row.id, Ef=formation_energy)

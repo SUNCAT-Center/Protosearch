@@ -19,14 +19,45 @@ path = build_bulk.__path__[0]
 
 
 class OqmdInterface:
-    """Interace to OQMD entries to create structurally unique atoms objects"""
+    """Interace to create structurally unique atoms objects
+    from OQMD structure prototypes
 
-    def __init__(self, source='icsd'):
+    Parameters:
+
+    source: str
+        'icsd' for experimental or 'oqmd' for full oqmd dataset
+    atom_proximity: float
+        Closest proximity of atoms allowed when estimating the lattice parameter
+        of the structures, in units of the sum of covalent radii.
+    fix_metal_ratio: bool
+        Wether prototype structures should have the same metal to
+        nonmetal ratio as the requested composition
+    required_elements: list of str
+        Elements that must be present in prototype structure,
+        usefull for requesting Oxide prototypes.
+    max_candidates: int
+        Maximum number of candidates to return for each prototype,
+        composition combination. Multible candidates can be returned
+        when the Wyckoff coordinates of species differ for prototype
+        structures.
+    """
+
+    def __init__(self,
+                 source='icsd',
+                 atom_proximity=0.95,
+                 fix_metal_ratio=False,
+                 required_elements=[],
+                 max_candidates=1):
+
         if source == 'icsd':
             self.dbfile = path + '/oqmd_icsd.db'
         elif source == 'oqmd':
             self.dbfile = path + '/oqmd_ver3.db'
+        self.proximity = atom_proximity
 
+        self.fix_metal_ratio = fix_metal_ratio
+        self.required_elements = required_elements
+        self.max_candidates = max_candidates
 
     def create_proto_data_set(self,
                               chemical_formula,
@@ -70,11 +101,9 @@ class OqmdInterface:
                 max_atoms=max_atoms)
 
         for count, proto_name in enumerate(distinct_protonames):
-            data_list = self.get_atoms_for_prototype(chemical_formula,
-                                                     proto_name,
-                                                     fix_metal_ratio=False,
-                                                     must_contain_nonmetal=False,
-                                                     max_candidates=1)
+            data_list = \
+                self.get_atoms_for_prototype(chemical_formula,
+                                             proto_name)
 
             DB = PrototypeSQL(filename=filename)
 
@@ -121,10 +150,7 @@ class OqmdInterface:
 
     def get_atoms_for_prototype(self,
                                 chemical_formula,
-                                proto_name,
-                                fix_metal_ratio=False,
-                                must_contain_nonmetal=False,
-                                max_candidates=1):
+                                proto_name):
 
         oqmd_db = connect(self.dbfile)
 
@@ -138,8 +164,9 @@ class OqmdInterface:
                          if not n in metal_numbers]
         nonmetals_symbols = ''.join(np.array(symbols0)[nonmetals_idx])
 
-        if must_contain_nonmetal:
-            structures = list(oqmd_db.select(nonmetals_symbols,
+        if self.required_elements:
+            elements = ''.join(self.required_elements)
+            structures = list(oqmd_db.select(elements,
                                              proto_name=proto_name))
         else:
             structures = list(oqmd_db.select(proto_name=proto_name))
@@ -164,7 +191,7 @@ class OqmdInterface:
                 0].format('metal')
             metal_count = len([n for n in atoms.numbers if n in metal_numbers])
             metal_ratio = metal_count / len(atoms)
-            if fix_metal_ratio and not metal_ratio == metal_ratio_0:
+            if self.fix_metal_ratio and not metal_ratio == metal_ratio_0:
                 continue
 
             atoms_sub_list = self.substitute_atoms(atoms, symbols0)
@@ -190,7 +217,8 @@ class OqmdInterface:
 
                 # Set new lattice constants
                 CP = CellParameters(spacegroup=spacegroup)
-                atoms = CP.optimize_lattice_constants(atoms)
+                atoms = CP.optimize_lattice_constants(atoms,
+                                                      proximity=self.proximity)
                 # Get primitive atoms
                 atoms = SPG.get_primitive_atoms(atoms)
 
@@ -205,7 +233,7 @@ class OqmdInterface:
                                 'original_formula': orig_formula,
                                 'atoms': atoms.copy()}]
 
-            if len(atoms_data) >= max_candidates:
+            if len(atoms_data) >= self.max_candidates:
                 break
 
 

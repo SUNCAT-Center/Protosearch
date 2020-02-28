@@ -287,7 +287,7 @@ class Workflow(PrototypeSQL):
 
         param_dict = {}
         if read_params:
-            param_dict = params2dict(runpath + '/param')
+            param_dict = params2dict(runpath + '/parameters.json')
             key_value_pairs.update(param_dict)
 
         atoms = set_calculator_info(atoms, param_dict)
@@ -305,7 +305,7 @@ class Workflow(PrototypeSQL):
 
         key_value_pairs = {'completed': -1,
                            'runpath': runpath}
-        param_dict = params2dict(runpath + '/param')
+        param_dict = params2dict(runpath + '/parameters.json')
         atoms = ase.io.read(runpath + '/initial.POSCAR')
 
         PC = PrototypeClassification(atoms)
@@ -541,11 +541,8 @@ def vasp_errors(error):
 
 
 def params2dict(paramfile):
-    param_dict = {}
     with open(paramfile, 'r') as f:
-        param = f.read().lstrip('/').rstrip('\n')
-        param_values = param.split('/')
-        for i, param_key in enumerate(VaspStandards.sorted_calc_parameters):
-            param_dict[param_key] = param_values[i]
+        param_dict = json.load(f)
+    param_dict['ldau_luj'] = json.dumps(param_dict['ldau_luj'])
 
     return param_dict

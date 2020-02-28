@@ -152,7 +152,7 @@ class TriSubmit(Submit):
     def __init__(self,
                  atoms,
                  calc_parameters=None,
-                 ncpus=None,
+                 ncpus=4,
                  queue='medium',
                  calculator='vasp',
                  basepath=None,
@@ -168,7 +168,7 @@ class TriSubmit(Submit):
                          calc_parameters)
 
         if ncpus is None:
-            ncpus = get_ncpus_from_volume(atoms)
+            ncpus = 4 #get_ncpus_from_volume(atoms)
 
         self.ncpus = ncpus
         self.queue = queue
@@ -264,7 +264,7 @@ class NerscSubmit(Submit):
 
 
 def get_ncpus_from_volume(atoms):
-    ncpus = int((atoms.get_volume() / 80 // 4) * 4)
+    ncpus = int((atoms.get_volume() / 20 // 4) * 4)
     return max(ncpus, 1)
 
 

@@ -73,7 +73,7 @@ class VaspModel:
         if self.setups:
             modelstr += '    setups={'
             for symbol, setup in self.setups.items():
-                modelstr += "'{}': '{}'".format(symbol, setup)
+                modelstr += "'{}': '{}',".format(symbol, setup)
             modelstr += '},\n'
 
         for param in self.sorted_parameters:
