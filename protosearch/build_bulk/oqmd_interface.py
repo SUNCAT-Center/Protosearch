@@ -71,7 +71,10 @@ class OqmdInterface:
 
         for count, proto_name in enumerate(distinct_protonames):
             data_list = self.get_atoms_for_prototype(chemical_formula,
-                                                     proto_name)
+                                                     proto_name,
+                                                     fix_metal_ratio=False,
+                                                     must_contain_nonmetal=False,
+                                                     max_candidates=1)
 
             DB = PrototypeSQL(filename=filename)
 
