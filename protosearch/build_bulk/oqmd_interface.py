@@ -26,7 +26,7 @@ class OqmdInterface:
 
     source: str
         'icsd' for experimental or 'oqmd' for full oqmd dataset
-    atom_proximity: float
+    proximity: float
         Closest proximity of atoms allowed when estimating the lattice parameter
         of the structures, in units of the sum of covalent radii.
     fix_metal_ratio: bool
@@ -44,7 +44,7 @@ class OqmdInterface:
 
     def __init__(self,
                  source='icsd',
-                 atom_proximity=0.95,
+                 proximity=0.95,
                  fix_metal_ratio=False,
                  required_elements=[],
                  max_candidates=1):
@@ -53,7 +53,7 @@ class OqmdInterface:
             self.dbfile = path + '/oqmd_icsd.db'
         elif source == 'oqmd':
             self.dbfile = path + '/oqmd_ver3.db'
-        self.proximity = atom_proximity
+        self.proximity = proximity
 
         self.fix_metal_ratio = fix_metal_ratio
         self.required_elements = required_elements
