@@ -1,1 +1,1 @@
-__maintainer__ = "Kirsten Winther"
+from .build_bulk import BuildBulk
