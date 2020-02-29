@@ -11,7 +11,6 @@ from protosearch.ml_modelling.fingerprint import clean_features
 from .wyckoff_symmetries import WyckoffSymmetries
 from .fitness_function import get_fitness, get_connections
 
-
 class CellParameters(WyckoffSymmetries):
     """
     Provides a fair estimate of cell parameters including lattice constants,
@@ -27,7 +26,7 @@ class CellParameters(WyckoffSymmetries):
     """
 
     def __init__(self,
-                 spacegroup=None,
+                 spacegroup=1,
                  wyckoffs=None,
                  species=None,
                  verbose=True
@@ -168,9 +167,9 @@ class CellParameters(WyckoffSymmetries):
             opt_cell_parameters = []
 
             if self.verbose:
-                print('Running ML + GA for {} - {} - {}. {} atoms'
-                      .format(self.spacegroup, self.wyckoffs, self.species,
-                              self.natoms))
+                print('Optimizing free coordinates for {} - {} - {}'
+                      .format(self.spacegroup, self.wyckoffs, self.species))
+                print('Fitness iterations:')
 
             atoms_list = \
                 self.run_ml_ga_optimization(
@@ -191,9 +190,8 @@ class CellParameters(WyckoffSymmetries):
             opt_atoms_list = []
             opt_cell_parameters = []
             if self.verbose:
-                print('Optimizing lattice constants for {} - {} - {}. {} atoms'
-                      .format(self.spacegroup, self.wyckoffs, self.species,
-                              self.natoms))
+                print('Optimizing lattice constants for {} - {} - {}'
+                      .format(self.spacegroup, self.wyckoffs, self.species))
 
             atoms = self.construct_atoms(cell_parameters)
             opt_atoms = \
@@ -323,7 +321,6 @@ class CellParameters(WyckoffSymmetries):
         converged = False
         iter_id = 1
         train_population = []
-
         while not converged:
             bad_indices = []
             for i in batch_indices:
@@ -351,6 +348,7 @@ class CellParameters(WyckoffSymmetries):
                                                  primitive_cell=True)
 
                 fit = get_fitness(atoms)
+
                 connections = None
                 if fit > -2:
                     connections = get_connections(atoms, decimals=1)
@@ -362,7 +360,8 @@ class CellParameters(WyckoffSymmetries):
                                     'graph': connections}]
 
             best_fitness = np.max(fitness)
-            print('iter {} best_fitnes:'.format(iter_id),  np.max(fitness))
+            if self.verbose:
+                print('  {}'.format(np.max(fitness).round(2)))
             batch_indices = [idx for idx in batch_indices if not idx
                              in bad_indices]
             if train_features is None:
@@ -411,7 +410,6 @@ class CellParameters(WyckoffSymmetries):
                     #bounds=((0.5, 5),)
                 )
             except:
-                print('Fixed params')
                 Model = get_regression_model('catlearn')(
                     features['train'],
                     np.array(fitness),
@@ -478,7 +476,6 @@ class CellParameters(WyckoffSymmetries):
         else:
             all_atoms = [s['atoms'] for s in all_structures]
             all_atoms = [all_atoms[i] for i in indices]
-        print('final fitness: ', fitness[indices])
         return all_atoms
 
     def construct_atoms(self, cell_parameters=None, primitive_cell=False):
