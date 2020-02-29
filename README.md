@@ -10,7 +10,7 @@ $ python setup.py install
 ```
 ## Enumerating crystal structures
 
-Protosearch can be used to enumerate structures from experimental prototypes, taken as the ICSD entries in the OQMD database. The code make all possible atomic substitutions, and finds appropiate values for lattice constants. The atom_proximity parameter sets the minimum allowed distance between atoms, in units of the sum of covalent radii of atomic pairs.
+Protosearch can be used to enumerate structures from experimental prototypes, taken as the ICSD entries in the OQMD database. The code make all possible atomic substitutions, and finds appropiate values for lattice constants. The proximity parameter sets the minimum allowed distance between atoms, in units of the sum of covalent radii of atomic pairs.
 
 
 The script below generates a set of structures and stores them in an ASE db.
@@ -21,7 +21,7 @@ The script below generates a set of structures and stores them in an ASE db.
 from protosearch.build_bulk.oqmd_interface import OqmdInterface
 
 O = OqmdInterface(source='icsd',
-                  atom_proximity=0.9,
+                  proximity=0.9,
                   fix_metal_ratio=False,
                   required_elements=[],  # set to ['O'] if prototypes must be oxides
                   max_candidates=1)
@@ -36,7 +36,7 @@ Protosearch can also enumerate theoretical prototypes from a bottom up approach.
 
 Protosearch uses a Gaussian Process accelerated genetic algorithm to optimize free Wyckoff parameters and lattice angles for the crystal prototypes. Good estimates for metal oxides are obtained by using the Ewald Energy as a measure of structure fitness. For metallic systems, the density of the structure is minimized to get resonable structures.
 
-The example below generates a set of theoretical TiO_2 prototypes and stores them in an ASE db.
+The example below generates a set of theoretical TiO$_2$ prototypes and stores them in an ASE db.
 
 ```py
 from protosearch.build_bulk.enumeration import Enumeration, AtomsEnumeration
