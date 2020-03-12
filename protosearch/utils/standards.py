@@ -139,7 +139,8 @@ class CommonCalc():
              # MP U is very high. Others have used 3.0
              'W':  {'L': 2, 'U': 6.2, 'J': 0.0},
              #'Zr': {'L': 2, 'U': 4.00, 'J': 0.0},
-             #'Ce': {'L': 3, 'U': 4.50, 'J': 0.0}}
+             #'Ce': {'L': 3, 'U': 4.50, 'J': 0.0}
+    }
 
     U_metals = list(U_luj.keys())
     for U in U_trickers:
