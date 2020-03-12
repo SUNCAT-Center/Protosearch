@@ -104,11 +104,14 @@ class ActiveLearningLoop:
         self.stoichiometries = []
         for formula in formulas:
             stoich = []
-            for f in formula:
-                if f.isdigit():
-                    stoich = stoich[:-1] + [f]
+            for i, a1 in enumerate(alphabet):
+                a2 = alphabet[i+1]
+                if a1 in formula:
+                    s = formula.split(a1)[1].split(a2)[0]
+                    s = s or '1'
+                    stoich += [s]
                 else:
-                    stoich += ['1']
+                    break
             self.stoichiometries += ['_'.join(stoich)]
 
         self.elements = elements
